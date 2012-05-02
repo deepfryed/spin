@@ -57,7 +57,7 @@ def rails_root
 end
 
 # ## spin serve
-def serve(force_rspec, force_testunit, time, push_results)
+def serve(force_rspec, force_testunit, time, push_results, require_files = [])
   root_path = rails_root and Dir.chdir(root_path)
   file = socket_file
 
@@ -105,6 +105,9 @@ def serve(force_rspec, force_testunit, time, push_results)
       rescue LoadError
       end if test_framework == :rspec
     }
+
+    # require any files before serving.
+    require_files.each {|file| require File.expand_path(file)}
     # This is the amount of time that you'll save on each subsequent test run.
     puts "Preloaded Rails env in #{sec}s..."
   else
@@ -247,6 +250,8 @@ force_rspec = false
 force_testunit = false
 time = false
 push_results = false
+require_files = []
+
 options = OptionParser.new do |opts|
   opts.banner = usage
   opts.separator ""
@@ -272,6 +277,10 @@ options = OptionParser.new do |opts|
     push_results = v
   end
 
+  opts.on('-r', '--require file', 'Require these files after loading application') do |v|
+    require_files << v
+  end
+
   opts.separator "General Options:"
   opts.on('-e', 'Stub to keep kicker happy')
   opts.on('-h', '--help') do
@@ -283,7 +292,7 @@ options.parse!
 
 subcommand = ARGV.shift
 case subcommand
-when 'serve' then serve(force_rspec, force_testunit, time, push_results)
+when 'serve' then serve(force_rspec, force_testunit, time, push_results, require_files)
 when 'push' then push
 else
   $stderr.puts options
